@@ -1,761 +1,424 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Spark星核 (语音交互 & AI 增强版)</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spark星核 (多人在线 & 流程重构版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
-    <!-- PDF 生成库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-      body {
-        font-family: "Noto Sans SC", sans-serif;
-        background-color: #1a202c;
-        color: #e2e8f0;
-      }
-      .screen {
-        display: none;
-      }
-      .screen.active {
-        display: flex;
-      }
-      .glass-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 1rem;
-      }
-      .player-slot {
-        transition: all 0.3s ease;
-      }
-      .player-slot.empty:hover {
-        transform: translateY(-5px);
-        background: rgba(255, 255, 255, 0.1);
-      }
-      .btn-primary {
-        background-color: #facc15;
-        color: #422006;
-        font-weight: bold;
-        border-radius: 0.5rem;
-        padding: 0.75rem 2rem;
-        transition: all 0.2s ease;
-        border-bottom: 4px solid #ca8a04;
-      }
-      .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(250, 204, 21, 0.3);
-      }
-      .btn-primary:active {
-        transform: translateY(1px);
-        border-bottom-width: 2px;
-      }
-      .btn-primary:disabled {
-        background-color: #4a5568;
-        color: #a0aec0;
-        border-bottom-color: #2d3748;
-        cursor: not-allowed;
-        transform: translateY(0);
-        box-shadow: none;
-      }
-      .btn-secondary {
-        background-color: #38b2ac;
-        color: white;
-        font-weight: bold;
-        border-radius: 0.5rem;
-        padding: 0.75rem 1.5rem;
-        transition: all 0.2s ease;
-        border-bottom: 4px solid #2c7a7b;
-      }
-      .btn-secondary:hover {
-        transform: translateY(-2px);
-      }
-      .role-tag {
-        background-color: rgba(0, 0, 0, 0.3);
-        padding: 2px 8px;
-        border-radius: 99px;
-        font-size: 0.75rem;
-      }
-      .keyword-card {
-        transition: all 0.3s ease;
-        cursor: pointer;
-      }
-      .keyword-card:hover {
-        transform: scale(1.05) rotate(1deg);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-      }
-      .highlight-player {
-        animation: pulse-red 1.5s infinite;
-      }
-      @keyframes pulse-red {
-        0% {
-          box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-        }
-        70% {
-          box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
-        }
-        100% {
-          box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
-        }
-      }
-      .speaking {
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.7);
-        animation: pulse-blue 1.5s infinite;
-      }
-      @keyframes pulse-blue {
-        0% {
-          box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
-        }
-        70% {
-          box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
-        }
-        100% {
-          box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
-        }
-      }
-      .loader {
-        border: 2px solid #f3f3f3;
-        border-top: 2px solid #3498db;
-        border-radius: 50%;
-        width: 16px;
-        height: 16px;
-        animation: spin 1s linear infinite;
-        display: inline-block;
-      }
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
+        body { font-family: 'Noto Sans SC', sans-serif; background-color: #1a202c; color: #e2e8f0; }
+        .screen { display: none; }
+        .screen.active { display: flex; }
+        .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
+        .btn-primary { background-color: #facc15; color: #422006; font-weight: bold; border-radius: 0.5rem; padding: 0.75rem 2rem; transition: all 0.2s ease; border-bottom: 4px solid #ca8a04; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(250, 204, 21, 0.3); }
+        .btn-primary:disabled { background-color: #4a5568; color: #a0aec0; border-bottom-color: #2d3748; cursor: not-allowed; transform: translateY(0); box-shadow: none; }
+        .btn-secondary { background-color: #38b2ac; color: white; font-weight: bold; border-radius: 0.5rem; padding: 0.75rem 1.5rem; transition: all 0.2s ease; border-bottom: 4px solid #2c7a7b; }
+        .btn-secondary:hover { transform: translateY(-2px); }
+        .speaking { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.7); animation: pulse-blue 1.5s infinite; }
+        @keyframes pulse-blue { 0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); } 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); } }
+        .loader { border: 2px solid #f3f3f3; border-top: 2px solid #3498db; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .role-tag { background-color: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 99px; font-size: 0.75rem; }
+        .player-slot { transition: all 0.3s ease; }
     </style>
-  </head>
-  <body>
+</head>
+<body>
+
     <!-- Screen 1: Splash Screen -->
-    <div
-      id="splash-screen"
-      class="screen active h-screen w-screen flex-col justify-center items-center bg-cover bg-center"
-      style="
-        background-image: url('https://placehold.co/1200x800/1a202c/1a202c');
-      "
-    >
-      <div class="text-center">
-        <div class="glass-card p-8 mb-8">
-          <h1 class="text-5xl font-bold mb-2">Spark星核</h1>
-          <p class="text-xl text-yellow-300">点燃智慧火花，共创无限可能</p>
+    <div id="splash-screen" class="screen active h-screen w-screen flex-col justify-center items-center">
+        <div class="text-center">
+            <div class="glass-card p-8 mb-8"><h1 class="text-5xl font-bold mb-2">Spark星核</h1><p class="text-xl text-yellow-300">点燃智慧火花，共创无限可能</p></div>
+            <div class="space-y-4">
+                <button id="create-room-btn" class="btn-primary text-2xl w-64">创建探索房间</button>
+                <div class="flex items-center justify-center gap-2">
+                    <input type="text" id="join-room-input" class="bg-gray-700 text-center text-lg p-3 rounded-lg w-40 tracking-widest" placeholder="输入房间号">
+                    <button id="join-room-btn" class="btn-secondary text-lg">加入房间</button>
+                </div>
+            </div>
         </div>
-        <button id="start-btn" class="btn-primary text-2xl">
-          创建探索房间
-        </button>
-      </div>
     </div>
 
-    <!-- Screen 2: Game Lobby -->
+    <!-- Screen 2: Case Setup Screen -->
+    <div id="case-setup-screen" class="screen h-screen w-screen flex-col justify-center items-center p-4">
+        <div class="glass-card p-8 max-w-2xl w-full text-center">
+            <h2 class="text-2xl font-bold mb-2">第一步：设定案主议题</h2>
+            <p class="text-gray-400 mb-6">请输入一个明确的议题，AI将为您生成详细的案主信息。</p>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <input type="text" id="case-topic-input" class="flex-1 bg-gray-900/50 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400" placeholder="例如：团队协作效率低">
+                <button id="ai-generate-case-btn" class="btn-secondary flex items-center justify-center">✨ AI 生成案主信息</button>
+            </div>
+            <p id="case-status" class="text-green-400 mt-4 h-6"></p>
+            <button id="go-to-lobby-btn" class="btn-primary text-xl w-full mt-6" disabled>下一步：邀请玩家 & 分配角色</button>
+        </div>
+    </div>
+
+    <!-- Screen 3: Game Lobby -->
     <div id="lobby-screen" class="screen h-screen w-screen flex-col p-4 md:p-8">
-      <header class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-bold">
-          游戏房间 (房间号: <span id="room-id"></span>)
-        </h1>
-        <button
-          id="fill-ai-btn"
-          class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-        >
-          <i class="fas fa-robot mr-2"></i>AI 填充空位
-        </button>
-      </header>
-      <main
-        class="flex-1 grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6"
-      ></main>
-      <footer class="mt-4 text-center">
-        <div
-          id="case-generation-section"
-          class="glass-card p-4 max-w-2xl mx-auto mb-4"
-        >
-          <h3 class="font-semibold mb-2">第一步：设定案主议题</h3>
-          <div class="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              id="case-topic-input"
-              class="flex-1 bg-gray-900/50 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400"
-              placeholder="输入议题，如“团队协作效率低”"
-            /><button
-              id="ai-generate-case-btn"
-              class="btn-secondary flex items-center justify-center"
-            >
-              ✨ AI 生成案主信息
-            </button>
-          </div>
-          <p id="case-status" class="text-green-400 mt-2 h-5"></p>
-        </div>
-        <div class="bg-gray-900/50 p-3 rounded-lg mb-4 max-w-2xl mx-auto">
-          <h3 class="font-semibold mb-2">第二步：分配角色</h3>
-          <p id="game-config" class="text-gray-300">
-            1位 案主, 1位 Sparker, 4位 准Sparker
-          </p>
-        </div>
-        <button
-          id="start-game-btn"
-          class="btn-primary text-xl w-full max-w-xs mx-auto"
-        >
-          等待玩家加入...
-        </button>
-      </footer>
+        <header class="flex justify-between items-center mb-4"><h1 class="text-2xl font-bold">游戏房间号: <span id="room-id-display" class="text-yellow-300 tracking-widest cursor-pointer" title="点击复制"></span></h1><button id="fill-ai-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"><i class="fas fa-robot mr-2"></i>AI 填充空位</button></header>
+        <main class="flex-1 grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6"></main>
+        <footer class="mt-4 text-center"><button id="start-game-btn" class="btn-primary text-xl w-full max-w-xs mx-auto">等待玩家就绪...</button></footer>
     </div>
-
-    <!-- Screen 3: Game Board -->
+    
+    <!-- Screen 4: Game Board -->
     <div id="game-screen" class="screen h-screen w-screen flex-col p-4">
-      <header class="flex justify-between items-center mb-4 p-3 glass-card">
-        <h2 id="game-stage-title" class="text-xl font-bold">探索进行中...</h2>
-        <button
-          id="end-game-btn"
-          class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
-        >
-          ✨ 结束并生成洞察报告
-        </button>
-      </header>
-      <div class="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden">
-        <div class="flex-[2] flex flex-col gap-4">
-          <main class="flex-1 glass-card p-4 flex flex-col">
-            <h3
-              class="text-lg font-semibold mb-3 border-b border-gray-600 pb-2"
-            >
-              关键词看板
-            </h3>
-            <div
-              id="keyword-board"
-              class="flex-1 overflow-y-auto p-2 flex flex-wrap content-start gap-3"
-            ></div>
-          </main>
-          <div class="h-1/3 glass-card p-4 flex flex-col">
-            <h3
-              class="text-lg font-semibold mb-3 border-b border-gray-600 pb-2"
-            >
-              发言记录
-            </h3>
-            <div
-              id="transcript-log"
-              class="flex-1 overflow-y-auto space-y-2 pr-2"
-            ></div>
-          </div>
+        <header class="flex justify-between items-center mb-4 p-3 glass-card"><h2 id="game-stage-title" class="text-xl font-bold">探索进行中...</h2><button id="end-game-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">✨ 结束并生成洞察报告</button></header>
+        <div class="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden">
+            <div class="flex-[2] flex flex-col gap-4"><main class="flex-1 glass-card p-4 flex flex-col"><h3 class="text-lg font-semibold mb-3 border-b border-gray-600 pb-2">关键词看板</h3><div id="keyword-board" class="flex-1 overflow-y-auto p-2 flex flex-wrap content-start gap-3"></div></main><div class="h-1/3 glass-card p-4 flex flex-col"><h3 class="text-lg font-semibold mb-3 border-b border-gray-600 pb-2">发言记录</h3><div id="transcript-log" class="flex-1 overflow-y-auto space-y-2 pr-2"></div></div></div>
+            <aside class="flex-1 glass-card p-4 flex flex-col"><div class="mb-4"><h3 class="text-lg font-semibold mb-2 border-b border-gray-600 pb-2">案主信息</h3><div id="game-case-details" class="text-sm text-gray-300 max-h-24 overflow-y-auto pr-2"></div></div><h3 class="text-lg font-semibold mb-3 border-b border-gray-600 pb-2">本局玩家</h3><div id="game-player-list" class="space-y-3 overflow-y-auto"></div></aside>
         </div>
-        <aside class="flex-1 glass-card p-4 flex flex-col">
-          <div class="mb-4">
-            <h3
-              class="text-lg font-semibold mb-2 border-b border-gray-600 pb-2"
-            >
-              案主信息
-            </h3>
-            <div
-              id="game-case-details"
-              class="text-sm text-gray-300 max-h-24 overflow-y-auto pr-2"
-            ></div>
-          </div>
-          <h3 class="text-lg font-semibold mb-3 border-b border-gray-600 pb-2">
-            本局玩家
-          </h3>
-          <div id="game-player-list" class="space-y-3 overflow-y-auto"></div>
-        </aside>
-      </div>
     </div>
 
     <!-- Modals -->
-    <div
-      id="role-modal"
-      class="fixed inset-0 bg-black bg-opacity-70 hidden justify-center items-center z-50"
-    >
-      <div class="glass-card p-6 w-full max-w-sm text-center">
-        <h2 class="text-xl font-bold mb-6">
-          为 <span id="modal-player-name"></span> 分配角色
-        </h2>
-        <div id="role-options" class="space-y-3"></div>
-        <button
-          id="cancel-role-btn"
-          class="mt-6 bg-gray-600 hover:bg-gray-700 py-2 px-6 rounded-lg"
-        >
-          取消
-        </button>
-      </div>
-    </div>
-    <div
-      id="alert-modal"
-      class="fixed inset-0 bg-black bg-opacity-70 hidden justify-center items-center z-50"
-    >
-      <div class="glass-card p-6 w-full max-w-md text-left">
-        <h2
-          id="alert-title"
-          class="text-xl font-bold mb-4 text-yellow-300"
-        ></h2>
-        <div
-          id="alert-message"
-          class="text-gray-200 mb-6 max-h-[60vh] overflow-y-auto whitespace-pre-wrap p-2 bg-black/20 rounded"
-        ></div>
-        <div class="flex justify-end gap-4 mt-6">
-          <button id="alert-download-btn" class="btn-secondary hidden">
-            <i class="fas fa-file-pdf mr-2"></i>下载PDF</button
-          ><button id="alert-ok-btn" class="btn-primary">好的</button>
-        </div>
-      </div>
-    </div>
+    <div id="role-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden justify-center items-center z-50"><div class="glass-card p-6 w-full max-w-sm text-center"><h2 class="text-xl font-bold mb-6">为 <span id="modal-player-name"></span> 分配角色</h2><div id="role-options" class="space-y-3"></div><button id="cancel-role-btn" class="mt-6 bg-gray-600 hover:bg-gray-700 py-2 px-6 rounded-lg">取消</button></div></div>
+    <div id="alert-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden justify-center items-center z-50"><div class="glass-card p-6 w-full max-w-md text-left"><h2 id="alert-title" class="text-xl font-bold mb-4 text-yellow-300"></h2><div id="alert-message" class="text-gray-200 mb-6 max-h-[60vh] overflow-y-auto whitespace-pre-wrap p-2 bg-black/20 rounded"></div><div class="flex justify-end gap-4 mt-6"><button id="alert-download-btn" class="btn-secondary hidden"><i class="fas fa-file-pdf mr-2"></i>下载PDF</button><button id="alert-ok-btn" class="btn-primary">好的</button></div></div></div>
+    
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, updateDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        // --- Web Speech API Setup ---
-        const SpeechRecognition =
-          window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognition;
-        if (SpeechRecognition) {
-          recognition = new SpeechRecognition();
-          recognition.continuous = false;
-          recognition.lang = "zh-CN";
-          recognition.interimResults = false;
-        } else {
-          console.warn("浏览器不支持语音识别。");
-        }
-
-        // --- DOM Elements ---
-        const screens = {
-          splash: document.getElementById("splash-screen"),
-          lobby: document.getElementById("lobby-screen"),
-          game: document.getElementById("game-screen"),
-        };
-        const startBtn = document.getElementById("start-btn");
-        const lobbyMain = screens.lobby.querySelector("main");
-        const startGameBtn = document.getElementById("start-game-btn");
-        const fillAiBtn = document.getElementById("fill-ai-btn");
-        const roomIdSpan = document.getElementById("room-id");
-        const roleModal = document.getElementById("role-modal");
-        const roleOptionsContainer = document.getElementById("role-options");
-        const modalPlayerName = document.getElementById("modal-player-name");
-        const cancelRoleBtn = document.getElementById("cancel-role-btn");
-        const alertModal = document.getElementById("alert-modal");
-        const alertTitle = document.getElementById("alert-title");
-        const alertMessage = document.getElementById("alert-message");
-        const alertOkBtn = document.getElementById("alert-ok-btn");
-        const alertDownloadBtn = document.getElementById("alert-download-btn");
-        const keywordBoard = document.getElementById("keyword-board");
-        const transcriptLog = document.getElementById("transcript-log");
-        const gamePlayerList = document.getElementById("game-player-list");
-        const gameCaseDetails = document.getElementById("game-case-details");
-        const endGameBtn = document.getElementById("end-game-btn");
-        const caseTopicInput = document.getElementById("case-topic-input");
-        const aiGenerateCaseBtn = document.getElementById(
-          "ai-generate-case-btn"
-        );
-        const caseStatus = document.getElementById("case-status");
-
-        // --- Game State ---
-        let players = [];
-        let caseDetails = "";
-        let currentPlayerSlot = null;
-        let isListening = false;
+        // --- App Setup ---
+        let db, auth, userId, currentRoomId, roomUnsubscribe, playersUnsubscribe;
+        let localRoomData = {};
+        let localPlayers = [];
+        let selectedPlayerIdForRole = null;
         const MAX_PLAYERS = 6;
         const ROLES = {
-          case_owner: {
-            name: "案主",
-            icon: "fa-user-tie",
-            color: "bg-blue-500",
-            max: 1,
-          },
-          sparker: {
-            name: "Sparker",
-            icon: "fa-fire",
-            color: "bg-red-500",
-            max: 1,
-          },
-          trainee: {
-            name: "准Sparker",
-            icon: "fa-user-graduate",
-            color: "bg-green-500",
-            max: 4,
-          },
+            'case_owner': { name: '案主', icon: 'fa-user-tie', color: 'bg-blue-500', max: 1 },
+            'sparker': { name: 'Sparker', icon: 'fa-fire', color: 'bg-red-500', max: 1 },
+            'trainee': { name: '准Sparker', icon: 'fa-user-graduate', color: 'bg-green-500', max: 4 }
         };
 
-        // --- Gemini API Function ---
-        const API_KEY = ""; // Provided by Canvas
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
-        async function callGemini(prompt, button) {
-          const originalButtonContent = button ? button.innerHTML : "";
-          if (button) {
-            button.innerHTML = `<div class="loader"></div>`;
-            button.disabled = true;
-          }
-          try {
-            const payload = {
-              contents: [{ role: "user", parts: [{ text: prompt }] }],
-            };
-            const response = await fetch(API_URL, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
-            });
-            if (!response.ok)
-              throw new Error(`API 请求失败: ${response.status}`);
-            const result = await response.json();
-            if (result.candidates && result.candidates.length > 0)
-              return result.candidates[0].content.parts[0].text;
-            throw new Error("从 API 未收到有效回复。");
-          } catch (error) {
-            showSystemAlert("API 调用出错", error.message);
-            return null;
-          } finally {
-            if (button) {
-              button.innerHTML = originalButtonContent;
-              button.disabled = false;
+        // --- Firestore Path Helpers ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const ROOMS_COLLECTION_PATH = `artifacts/${appId}/public/data/spark-rooms`;
+
+        function getRoomRef(roomId) { return doc(db, ROOMS_COLLECTION_PATH, roomId); }
+        function getPlayersCollectionRef(roomId) { return collection(db, `${ROOMS_COLLECTION_PATH}/${roomId}/players`); }
+        function getPlayerRef(roomId, playerId) { return doc(db, `${ROOMS_COLLECTION_PATH}/${roomId}/players`, playerId); }
+
+
+        // --- DOM Elements ---
+        const screens = { splash: document.getElementById('splash-screen'), caseSetup: document.getElementById('case-setup-screen'), lobby: document.getElementById('lobby-screen'), game: document.getElementById('game-screen') };
+        const createRoomBtn = document.getElementById('create-room-btn');
+        const joinRoomInput = document.getElementById('join-room-input');
+        const joinRoomBtn = document.getElementById('join-room-btn');
+        const caseTopicInput = document.getElementById('case-topic-input');
+        const aiGenerateCaseBtn = document.getElementById('ai-generate-case-btn');
+        const caseStatus = document.getElementById('case-status');
+        const goToLobbyBtn = document.getElementById('go-to-lobby-btn');
+        const roomIdDisplay = document.getElementById('room-id-display');
+        const lobbyMain = screens.lobby.querySelector('main');
+        const startGameBtn = document.getElementById('start-game-btn');
+        const roleModal = document.getElementById('role-modal');
+        const modalPlayerName = document.getElementById('modal-player-name');
+        const roleOptionsContainer = document.getElementById('role-options');
+        const cancelRoleBtn = document.getElementById('cancel-role-btn');
+        const alertModal = document.getElementById('alert-modal');
+        const alertTitle = document.getElementById('alert-title');
+        const alertMessage = document.getElementById('alert-message');
+        const alertOkBtn = document.getElementById('alert-ok-btn');
+        const alertDownloadBtn = document.getElementById('alert-download-btn');
+        
+        // --- Initialize App ---
+        async function initializeAppAndAuth() {
+            try {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                    } else {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            try {
+                                await signInWithCustomToken(auth, __initial_auth_token);
+                            } catch (error) {
+                                console.error("Custom token sign-in failed, falling back to anonymous:", error);
+                                await signInAnonymously(auth);
+                            }
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error("Firebase config error:", e);
+                showSystemAlert("初始化失败", "无法加载 Firebase 配置。请检查环境设置。");
             }
-          }
+        }
+        
+        // --- UI Functions ---
+        function switchScreen(screenName) { Object.values(screens).forEach(s => s.classList.remove('active')); screens[screenName].classList.add('active'); }
+        function showSystemAlert(title, message, isReport = false) {
+            alertTitle.innerHTML = title;
+            alertMessage.innerHTML = message.replace(/\n/g, '<br>');
+            alertDownloadBtn.style.display = isReport ? 'block' : 'none';
+            alertModal.classList.remove('hidden'); alertModal.classList.add('flex');
         }
 
-        // --- Core Functions ---
-        function switchScreen(screenName) {
-          Object.values(screens).forEach((s) => s.classList.remove("active"));
-          screens[screenName].classList.add("active");
+        // --- Room Logic ---
+        async function createRoom() {
+            if (!userId) { showSystemAlert("错误", "用户认证中，请稍候..."); return; }
+            createRoomBtn.disabled = true;
+            const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const roomRef = getRoomRef(roomCode);
+            const playerRef = getPlayerRef(roomCode, userId);
+
+            try {
+                await setDoc(roomRef, {
+                    hostId: userId,
+                    gameState: 'case_setup',
+                    caseTopic: '',
+                    caseDetails: '',
+                    createdAt: serverTimestamp(),
+                });
+                await setDoc(playerRef, {
+                    name: `玩家1 (房主)`,
+                    role: null,
+                    isHost: true,
+                });
+                joinRoom(roomCode);
+            } catch (error) {
+                console.error("Error creating room:", error);
+                showSystemAlert("创建失败", `无法创建房间。错误: ${error.message}`);
+                createRoomBtn.disabled = false;
+            }
         }
-        function initializeLobby() {
-          roomIdSpan.textContent = Math.random()
-            .toString(36)
-            .substring(2, 8)
-            .toUpperCase();
-          players = Array(MAX_PLAYERS).fill(null);
-          players[0] = { name: "我 (发起人)", isAi: false, role: null };
-          caseDetails = "";
-          caseStatus.textContent = "";
-          renderLobby();
-          updateStartButton();
+
+        async function joinRoom(roomId) {
+            if (!userId) { showSystemAlert("错误", "用户认证中，请稍候..."); return; }
+            if (!roomId) { showSystemAlert("错误", "请输入房间号。"); return; }
+            
+            const roomRef = getRoomRef(roomId);
+            const roomDoc = await getDoc(roomRef);
+            if (!roomDoc.exists()) { showSystemAlert("错误", "房间不存在。"); return; }
+
+            const playerRef = getPlayerRef(roomId, userId);
+            const playerDoc = await getDoc(playerRef);
+            if (!playerDoc.exists()) {
+                const playersColl = getPlayersCollectionRef(roomId);
+                const playersSnapshot = await getDocs(playersColl);
+                const playerCount = playersSnapshot.size;
+                if(playerCount >= MAX_PLAYERS) {
+                    showSystemAlert("错误", "房间已满。");
+                    return;
+                }
+                await setDoc(playerRef, {
+                    name: `玩家${playerCount + 1}`,
+                    role: null,
+                    isHost: false,
+                });
+            }
+
+            if (roomUnsubscribe) roomUnsubscribe();
+            currentRoomId = roomId;
+            roomUnsubscribe = onSnapshot(getRoomRef(currentRoomId), (doc) => {
+                if (!doc.exists()) {
+                    showSystemAlert("错误", "房间不存在或已被解散。", false);
+                    if(roomUnsubscribe) roomUnsubscribe();
+                    if(playersUnsubscribe) playersUnsubscribe();
+                    switchScreen('splash');
+                    return;
+                }
+                localRoomData = { id: doc.id, ...doc.data() };
+                renderApp(localRoomData);
+            }, (error) => {
+                console.error("Room snapshot error:", error);
+                showSystemAlert("连接错误", "与房间断开连接。");
+            });
         }
+
+        // --- Render Logic ---
+        function renderApp(roomData) {
+            if (!roomData || !roomData.gameState) return;
+            switch (roomData.gameState) {
+                case 'case_setup':
+                    switchScreen('caseSetup');
+                    renderCaseSetup(roomData);
+                    break;
+                case 'lobby':
+                    switchScreen('lobby');
+                    renderLobby();
+                    break;
+                case 'game':
+                    switchScreen('game');
+                    // renderGame(roomData);
+                    break;
+            }
+        }
+        
+        function renderCaseSetup(roomData) {
+            caseTopicInput.value = roomData.caseTopic || '';
+            caseStatus.textContent = roomData.caseDetails ? '✅ AI 已生成案主信息！' : '';
+            goToLobbyBtn.disabled = !roomData.caseDetails;
+        }
+
         function renderLobby() {
-          lobbyMain.innerHTML = "";
-          players.forEach((player, index) => {
-            const slot = document.createElement("div");
-            slot.className =
-              "player-slot glass-card p-4 flex flex-col items-center justify-center";
-            slot.dataset.index = index;
-            if (player) {
-              const roleInfo = player.role ? ROLES[player.role] : null;
-              slot.innerHTML = `<div class="relative w-20 h-20 rounded-full flex items-center justify-center text-4xl mb-3 ${
-                roleInfo ? roleInfo.color : "bg-gray-500"
-              } pointer-events-none"><i class="fas ${
-                roleInfo ? roleInfo.icon : "fa-question"
-              }"></i>${
-                player.isAi
-                  ? '<i class="fas fa-robot absolute bottom-0 right-0 text-yellow-300 text-lg"></i>'
-                  : ""
-              }</div><p class="font-bold pointer-events-none">${
-                player.name
-              }</p><p class="role-tag mt-1 pointer-events-none">${
-                roleInfo ? roleInfo.name : "等待分配角色..."
-              }</p>`;
-              if (index === 0 || !players[index].isAi) {
-                slot.style.cursor = "pointer";
-                slot.onclick = () => openRoleModal(index);
-              }
-            } else {
-              slot.classList.add("empty");
-              slot.innerHTML = `<div class="w-20 h-20 rounded-full border-2 border-dashed border-gray-500 flex items-center justify-center text-4xl text-gray-500 mb-3 pointer-events-none"><i class="fas fa-plus"></i></div><p class="text-gray-400 pointer-events-none">等待玩家加入</p><p class="text-xs text-gray-500 mt-1 pointer-events-none">点击邀请</p>`;
-              slot.style.cursor = "pointer";
-              slot.onclick = () => {
-                players[index] = {
-                  name: `玩家 ${index + 1}`,
-                  isAi: false,
-                  role: null,
-                };
-                renderLobby();
-                updateStartButton();
-              };
-            }
-            lobbyMain.appendChild(slot);
-          });
-        }
-        function updateStartButton() {
-          const filledSlots = players.filter((p) => p !== null).length;
-          if (filledSlots < MAX_PLAYERS) {
-            startGameBtn.disabled = true;
-            startGameBtn.textContent = `等待玩家加入 (${filledSlots}/${MAX_PLAYERS})`;
-          } else {
-            const allRolesAssigned = players.every((p) => p.role !== null);
-            const caseIsSet = caseDetails.trim() !== "";
-            startGameBtn.disabled = !(allRolesAssigned && caseIsSet);
-            if (!caseIsSet) {
-              startGameBtn.textContent = "请先生成案主信息";
-            } else if (!allRolesAssigned) {
-              startGameBtn.textContent = "请分配所有角色";
-            } else {
-              startGameBtn.textContent = "开始探索";
-              startGameBtn.classList.add("animate-pulse");
-            }
-          }
-        }
-        function openRoleModal(playerIndex) {
-          currentPlayerSlot = playerIndex;
-          const player = players[playerIndex];
-          modalPlayerName.textContent = player.name;
-          const currentRoleCounts = players.reduce((acc, p) => {
-            if (p && p.role) acc[p.role] = (acc[p.role] || 0) + 1;
-            return acc;
-          }, {});
-          roleOptionsContainer.innerHTML = "";
-          Object.entries(ROLES).forEach(([key, role]) => {
-            let isAvailable = (currentRoleCounts[key] || 0) < role.max;
-            if (player.role === key) isAvailable = true;
-            const button = document.createElement("button");
-            button.className = `w-full text-left p-3 rounded-lg flex items-center transition-colors ${
-              isAvailable
-                ? "hover:bg-yellow-500/50"
-                : "opacity-50 cursor-not-allowed"
-            }`;
-            button.disabled = !isAvailable;
-            button.innerHTML = `<i class="fas ${
-              role.icon
-            } w-8 text-center mr-4"></i><span>${
-              role.name
-            }</span><span class="ml-auto text-xs">${
-              currentRoleCounts[key] || 0
-            }/${role.max}</span>`;
-            if (isAvailable) button.onclick = () => assignRole(key);
-            roleOptionsContainer.appendChild(button);
-          });
-          roleModal.classList.remove("hidden");
-          roleModal.classList.add("flex");
-        }
-        function assignRole(roleKey) {
-          if (currentPlayerSlot !== null) {
-            players[currentPlayerSlot].role = roleKey;
-            closeRoleModal();
-            renderLobby();
-            updateStartButton();
-          }
-        }
-        function closeRoleModal() {
-          roleModal.classList.add("hidden");
-        }
-        function showSystemAlert(title, message, isReport = false) {
-          alertTitle.innerHTML = title;
-          alertMessage.innerHTML = message.replace(/\n/g, "<br>");
-          alertDownloadBtn.style.display = isReport ? "block" : "none";
-          alertModal.classList.remove("hidden");
-          alertModal.classList.add("flex");
-        }
-        function highlightUnassigned(type) {
-          const el =
-            type === "roles"
-              ? document.querySelectorAll(".player-slot")
-              : [document.getElementById("case-generation-section")];
-          el.forEach((slot) => {
-            if (type === "roles") {
-              const player = players[slot.dataset.index];
-              if (player && !player.role)
-                slot.classList.add("highlight-player");
-            } else {
-              slot.classList.add("highlight-player");
-            }
-          });
-          setTimeout(
-            () =>
-              document
-                .querySelectorAll(".highlight-player")
-                .forEach((slot) => slot.classList.remove("highlight-player")),
-            2000
-          );
-        }
-        function initializeGame() {
-          gameCaseDetails.textContent = caseDetails;
-          renderGamePlayerList();
-        }
-        function renderGamePlayerList() {
-          gamePlayerList.innerHTML = "";
-          players.forEach((player, index) => {
-            if (!player) return;
-            const roleInfo = ROLES[player.role];
-            const playerDiv = document.createElement("div");
-            playerDiv.className =
-              "player-item flex items-center p-2 bg-gray-900/50 rounded-lg transition-all";
-            playerDiv.dataset.index = index;
-            playerDiv.innerHTML = `
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-xl mr-3 ${
-                          roleInfo.color
-                        }"><i class="fas ${roleInfo.icon}"></i></div>
-                        <div class="flex-1"><p class="font-bold">${
-                          player.name
-                        }</p><p class="text-sm text-gray-400">${
-              roleInfo.name
-            }</p></div>
-                        ${
-                          player.isAi
-                            ? '<i class="fas fa-robot text-yellow-300"></i>'
-                            : `<button class="mic-btn p-2 rounded-full hover:bg-blue-500/50" data-index="${index}"><i class="fas fa-microphone"></i></button>`
+            roomIdDisplay.textContent = currentRoomId;
+            if (playersUnsubscribe) playersUnsubscribe();
+            playersUnsubscribe = onSnapshot(getPlayersCollectionRef(currentRoomId), (snapshot) => {
+                localPlayers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                lobbyMain.innerHTML = '';
+                
+                let playerSlots = [...localPlayers];
+                while(playerSlots.length < MAX_PLAYERS) playerSlots.push(null);
+
+                playerSlots.forEach((player) => {
+                    const slot = document.createElement('div');
+                    slot.className = 'player-slot glass-card p-4 flex flex-col items-center justify-center';
+                    if (player) {
+                        const roleInfo = player.role ? ROLES[player.role] : null;
+                        slot.innerHTML = `<div class="relative w-20 h-20 rounded-full flex items-center justify-center text-4xl mb-3 ${roleInfo ? roleInfo.color : 'bg-gray-500'}"><i class="fas ${roleInfo ? roleInfo.icon : 'fa-question'}"></i>${player.isAi ? '<i class="fas fa-robot absolute bottom-0 right-0 text-yellow-300 text-lg"></i>' : ''}</div><p class="font-bold">${player.name}</p><p class="role-tag mt-1">${roleInfo ? roleInfo.name : '等待分配角色...'}</p>`;
+                        if (localRoomData.hostId === userId) {
+                            slot.style.cursor = 'pointer';
+                            slot.onclick = () => openRoleModal(player.id, player.name);
                         }
-                    `;
-            gamePlayerList.appendChild(playerDiv);
-          });
+                    } else {
+                        slot.innerHTML = `<div class="w-20 h-20 rounded-full border-2 border-dashed border-gray-500 flex items-center justify-center text-4xl text-gray-500"><i class="fas fa-plus"></i></div><p class="text-gray-400">等待玩家加入</p>`;
+                    }
+                    lobbyMain.appendChild(slot);
+                });
+                
+                const allRolesAssigned = localPlayers.length > 0 && localPlayers.length === MAX_PLAYERS && localPlayers.every(p => p.role);
+                startGameBtn.disabled = !allRolesAssigned;
+                startGameBtn.textContent = allRolesAssigned ? '开始探索' : `等待玩家 (${localPlayers.length}/${MAX_PLAYERS})`;
+            }, (error) => {
+                console.error("Players snapshot error:", error);
+            });
         }
-        function addKeywordToBoard(text) {
-          if (!text.trim()) return;
-          const card = document.createElement("div");
-          const colors = [
-            "bg-yellow-400",
-            "bg-blue-400",
-            "bg-green-400",
-            "bg-purple-400",
-            "bg-pink-400",
-          ];
-          card.className = `keyword-card ${
-            colors[Math.floor(Math.random() * colors.length)]
-          } text-gray-900 font-semibold py-2 px-4 rounded-lg shadow-lg`;
-          card.textContent = text;
-          keywordBoard.appendChild(card);
-          keywordBoard.scrollTop = keywordBoard.scrollHeight;
+        
+        // --- Role Assignment Logic ---
+        function openRoleModal(playerId, playerName) {
+            selectedPlayerIdForRole = playerId;
+            modalPlayerName.textContent = playerName;
+            roleOptionsContainer.innerHTML = ''; // Clear previous options
+
+            const assignedRolesCount = localPlayers.reduce((acc, player) => {
+                if (player.role) {
+                    acc[player.role] = (acc[player.role] || 0) + 1;
+                }
+                return acc;
+            }, {});
+
+            Object.keys(ROLES).forEach(roleKey => {
+                const role = ROLES[roleKey];
+                const currentCount = assignedRolesCount[roleKey] || 0;
+                
+                const button = document.createElement('button');
+                button.className = `w-full p-3 rounded-lg text-white font-bold ${role.color}`;
+                button.textContent = `${role.name} (${currentCount}/${role.max})`;
+                
+                if (currentCount >= role.max) {
+                    button.disabled = true;
+                    button.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    button.onclick = () => assignRole(roleKey);
+                }
+                roleOptionsContainer.appendChild(button);
+            });
+
+            roleModal.classList.remove('hidden');
+            roleModal.classList.add('flex');
         }
-        function addTranscript(playerName, text) {
-          const entry = document.createElement("div");
-          entry.className = "text-sm";
-          entry.innerHTML = `<strong class="text-teal-300">${playerName}:</strong> ${text}`;
-          transcriptLog.appendChild(entry);
-          transcriptLog.scrollTop = transcriptLog.scrollHeight;
+
+        async function assignRole(roleKey) {
+            if (!selectedPlayerIdForRole || !currentRoomId) return;
+            const playerRef = getPlayerRef(currentRoomId, selectedPlayerIdForRole);
+            try {
+                await updateDoc(playerRef, { role: roleKey });
+                closeRoleModal();
+            } catch (error) {
+                console.error("Error assigning role:", error);
+                showSystemAlert("分配失败", `无法分配角色。错误: ${error.message}`);
+            }
         }
+
+        function closeRoleModal() {
+            roleModal.classList.add('hidden');
+            roleModal.classList.remove('flex');
+            selectedPlayerIdForRole = null;
+        }
+
+        // --- Gemini API Call ---
+        async function callGemini(button, prompt) {
+            button.disabled = true;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<span class="loader"></span> AI思考中...';
+
+            try {
+                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory };
+                const apiKey = ""; // Leave empty
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API call failed with status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0) {
+                    return result.candidates[0].content.parts[0].text;
+                } else {
+                    throw new Error("Invalid response structure from API.");
+                }
+            } catch (error) {
+                console.error("Gemini API call failed:", error);
+                showSystemAlert("AI 调用失败", `无法连接到AI服务。请稍后再试。`);
+                return null;
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }
+
 
         // --- Event Listeners ---
-        startBtn.addEventListener("click", () => {
-          switchScreen("lobby");
-          initializeLobby();
+        createRoomBtn.addEventListener('click', createRoom);
+        joinRoomBtn.addEventListener('click', () => {
+            const roomId = joinRoomInput.value.trim().toUpperCase();
+            joinRoom(roomId);
         });
-        startGameBtn.addEventListener("click", () => {
-          if (startGameBtn.disabled) {
-            if (caseDetails.trim() === "") {
-              showSystemAlert("准备未就绪", "请先生成案主信息。");
-              highlightUnassigned("case");
-            } else {
-              showSystemAlert("准备未就绪", "请为所有玩家分配角色。");
-              highlightUnassigned("roles");
+        
+        goToLobbyBtn.addEventListener('click', async () => {
+            await updateDoc(getRoomRef(currentRoomId), { gameState: 'lobby' });
+        });
+
+        startGameBtn.addEventListener('click', async () => {
+             if(startGameBtn.disabled) return;
+             await updateDoc(getRoomRef(currentRoomId), { gameState: 'game' });
+        });
+
+        aiGenerateCaseBtn.addEventListener('click', async () => {
+            const topic = caseTopicInput.value.trim();
+            if (!topic) { showSystemAlert('提示', '请输入一个议题。'); return; }
+            const prompt = `你是一位专业的商业案例作家。请围绕“${topic}”这个主题，为“Spark探索流”游戏生成一份详细的案主信息。内容需包括：1.案主背景 2.具体困境 3.相关情绪 4.期望目标。请用第一人称“我”来陈述，语言要真诚、自然，富有细节，能引发共鸣，总字数在200-300字之间。`;
+            const result = await callGemini(aiGenerateCaseBtn, prompt);
+            if (result) {
+                await updateDoc(getRoomRef(currentRoomId), { caseDetails: result, caseTopic: topic });
             }
-            return;
-          }
-          switchScreen("game");
-          initializeGame();
         });
-        fillAiBtn.addEventListener("click", () => {
-          for (let i = 0; i < MAX_PLAYERS; i++) {
-            if (players[i] === null)
-              players[i] = { name: `AI 玩家 ${i + 1}`, isAi: true, role: null };
-          }
-          renderLobby();
-          updateStartButton();
-        });
-        cancelRoleBtn.addEventListener("click", closeRoleModal);
-        roleModal.addEventListener(
-          "click",
-          (e) => e.target === roleModal && closeRoleModal()
-        );
-        alertOkBtn.addEventListener("click", () =>
-          alertModal.classList.add("hidden")
-        );
 
-        // --- AI & PDF & Voice Event Listeners ---
-        aiGenerateCaseBtn.addEventListener("click", async () => {
-          const topic = caseTopicInput.value.trim();
-          if (!topic) {
-            showSystemAlert("提示", "请输入一个议题。");
-            return;
-          }
-          const prompt = `你是一位专业的商业案例作家。请围绕“${topic}”这个主题，为“Spark探索流”游戏生成一份详细的案主信息。内容需包括：1.案主背景 2.具体困境 3.相关情绪 4.期望目标。请用第一人称“我”来陈述，语言要真诚、自然，富有细节，能引发共鸣，总字数在200-300字之间。`;
-          const result = await callGemini(prompt, aiGenerateCaseBtn);
-          if (result) {
-            caseDetails = result;
-            caseStatus.textContent = "✅ AI 已生成案主信息！";
-            showSystemAlert("✨ AI 已生成案主信息", result);
-            updateStartButton();
-          }
-        });
-        endGameBtn.addEventListener("click", async () => {
-          const allKeywords = Array.from(keywordBoard.children)
-            .map((c) => c.textContent)
-            .join(", ");
-          if (!allKeywords) {
-            showSystemAlert("无法生成报告", "关键词看板是空的。");
-            return;
-          }
-          const prompt = `你是一位顶级的引导师和分析师。请基于以下案主信息和本次探索流涌现的所有关键词，生成一份专业的洞察报告。报告应包含：1.核心议题提炼 2.模式与洞察 3.启发性问题。请使用清晰的标题和列表（如-）来组织你的报告。\n案主信息:\n${caseDetails}\n\n关键词列表:\n${allKeywords}`;
-          const result = await callGemini(prompt, endGameBtn);
-          if (result) showSystemAlert("✨ 本次探索洞察报告", result, true);
-        });
-        alertDownloadBtn.addEventListener("click", () => {
-          const { jsPDF } = window.jspdf;
-          const reportContent = document.getElementById("alert-message");
-          const reportTitle =
-            document.getElementById("alert-title").textContent;
-          html2canvas(reportContent, {
-            backgroundColor: null,
-            scale: 2,
-            scrollY: -window.scrollY,
-            height: reportContent.scrollHeight,
-            windowHeight: reportContent.scrollHeight,
-          }).then((canvas) => {
-            const imgData = canvas.toDataURL("image/png");
-            const pdf = new jsPDF("p", "mm", "a4");
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgWidth = canvas.width;
-            const imgHeight = canvas.height;
-            const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-            const imgX = (pdfWidth - imgWidth * ratio) / 2;
-            const imgY = 0;
-            pdf.addImage(
-              imgData,
-              "PNG",
-              imgX,
-              imgY,
-              imgWidth * ratio,
-              imgHeight * ratio
-            );
-            pdf.save(`${reportTitle}.pdf`);
-          });
-        });
-        gamePlayerList.addEventListener("click", (e) => {
-          const micBtn = e.target.closest(".mic-btn");
-          if (micBtn && recognition && !isListening) {
-            const playerIndex = micBtn.dataset.index;
-            const playerItem = micBtn.closest(".player-item");
+        cancelRoleBtn.addEventListener('click', closeRoleModal);
+        alertOkBtn.addEventListener('click', () => alertModal.classList.add('hidden'));
 
-            recognition.start();
-            isListening = true;
-            playerItem.classList.add("speaking");
-            micBtn.innerHTML = '<i class="fas fa-stop"></i>';
+        // Initialize
+        initializeAppAndAuth();
 
-            recognition.onend = () => {
-              isListening = false;
-              playerItem.classList.remove("speaking");
-              micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
-            };
-
-            recognition.onresult = async (event) => {
-              const transcript = event.results[0][0].transcript;
-              const playerName = players[playerIndex].name;
-              addTranscript(playerName, transcript);
-
-              // AI提炼关键词
-              const prompt = `你是一个关键词提炼AI。从以下这段发言中，提炼出1-3个核心关键词。每个关键词2-4个字。用逗号分隔。不要任何解释。\n发言内容: "${transcript}"`;
-              const keywordsResult = await callGemini(prompt, null); // No button to animate
-              if (keywordsResult) {
-                const keywords = keywordsResult
-                  .split(/,|，/)
-                  .map((k) => k.trim())
-                  .filter(Boolean);
-                keywords.forEach(addKeywordToBoard);
-              }
-            };
-          } else if (isListening) {
-            recognition.stop();
-          }
-        });
-      });
     </script>
-  </body>
+</body>
 </html>
