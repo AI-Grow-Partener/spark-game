@@ -19,18 +19,47 @@
         .btn-primary:disabled { background-color: #4a5568; color: #a0aec0; border-bottom-color: #2d3748; cursor: not-allowed; transform: translateY(0); box-shadow: none; }
         .btn-secondary { background-color: #38b2ac; color: white; font-weight: bold; border-radius: 0.5rem; padding: 0.75rem 1.5rem; transition: all 0.2s ease; border-bottom: 4px solid #2c7a7b; }
         .btn-secondary:hover { transform: translateY(-2px); }
-        .speaking { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.7); animation: pulse-blue 1.5s infinite; }
+        .speaking { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.7); animation: pulse-blue 1.5s infinite; border-radius: 0.75rem; }
         @keyframes pulse-blue { 0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); } 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); } }
         .loader { border: 2px solid #f3f3f3; border-top: 2px solid #3498db; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .role-tag { background-color: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 99px; font-size: 0.75rem; }
         .player-slot { transition: all 0.3s ease; }
+        .keyword-card { transition: all 0.3s ease; cursor: pointer; }
+        .keyword-card:hover { transform: scale(1.05) rotate(1deg); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .form-input { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
+    <!-- New: Login Screen -->
+    <div id="login-screen" class="screen active h-screen w-screen flex-col justify-center items-center p-4">
+        <div class="glass-card p-8 max-w-md w-full">
+            <h2 class="text-3xl font-bold text-center text-yellow-300 mb-6">欢迎来到 Spark星核</h2>
+            <div id="auth-container">
+                <!-- Login Form -->
+                <div id="login-form">
+                    <input type="email" id="login-email" class="w-full p-3 rounded-lg mb-4 form-input" placeholder="邮箱">
+                    <input type="password" id="login-password" class="w-full p-3 rounded-lg mb-4 form-input" placeholder="密码">
+                    <button id="login-btn" class="btn-primary w-full text-lg">登录</button>
+                    <p class="text-center mt-4">没有账号？ <button id="show-register-btn" class="text-teal-400 hover:underline">立即注册</button></p>
+                </div>
+                <!-- Register Form -->
+                <div id="register-form" class="hidden">
+                    <input type="text" id="register-name" class="w-full p-3 rounded-lg mb-4 form-input" placeholder="昵称">
+                    <input type="email" id="register-email" class="w-full p-3 rounded-lg mb-4 form-input" placeholder="邮箱">
+                    <input type="password" id="register-password" class="w-full p-3 rounded-lg mb-4 form-input" placeholder="密码">
+                    <button id="register-btn" class="btn-secondary w-full text-lg">注册</button>
+                    <p class="text-center mt-4">已有账号？ <button id="show-login-btn" class="text-teal-400 hover:underline">返回登录</button></p>
+                </div>
+            </div>
+            <p id="auth-error" class="text-red-400 text-center mt-4 h-5"></p>
+        </div>
+    </div>
+
 
     <!-- Screen 1: Splash Screen -->
-    <div id="splash-screen" class="screen active h-screen w-screen flex-col justify-center items-center">
+    <div id="splash-screen" class="screen h-screen w-screen flex-col justify-center items-center">
+        <div id="user-info" class="absolute top-4 right-4 text-right"></div>
         <div class="text-center">
             <div class="glass-card p-8 mb-8"><h1 class="text-5xl font-bold mb-2">Spark星核</h1><p class="text-xl text-yellow-300">点燃智慧火花，共创无限可能</p></div>
             <div class="space-y-4">
@@ -59,7 +88,7 @@
 
     <!-- Screen 3: Game Lobby -->
     <div id="lobby-screen" class="screen h-screen w-screen flex-col p-4 md:p-8">
-        <header class="flex justify-between items-center mb-4"><h1 class="text-2xl font-bold">游戏房间号: <span id="room-id-display" class="text-yellow-300 tracking-widest cursor-pointer" title="点击复制"></span></h1><button id="fill-ai-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"><i class="fas fa-robot mr-2"></i>AI 填充空位</button></header>
+        <header class="flex justify-between items-center mb-4"><h1 class="text-2xl font-bold">游戏房间号: <span id="room-id-display" class="text-yellow-300 tracking-widest cursor-pointer" title="点击复制邀请链接"></span></h1><button id="fill-ai-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"><i class="fas fa-robot mr-2"></i>AI 填充空位</button></header>
         <main class="flex-1 grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6"></main>
         <footer class="mt-4 text-center"><button id="start-game-btn" class="btn-primary text-xl w-full max-w-xs mx-auto">等待玩家就绪...</button></footer>
     </div>
@@ -80,11 +109,11 @@
     <script type="module">
         // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, updateDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, updateDoc, serverTimestamp, getDocs, addDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- App Setup ---
-        let db, auth, userId, currentRoomId, roomUnsubscribe, playersUnsubscribe;
+        let db, auth, userId, currentRoomId, roomUnsubscribe, playersUnsubscribe, transcriptUnsubscribe, keywordsUnsubscribe;
         let localRoomData = {};
         let localPlayers = [];
         let selectedPlayerIdForRole = null;
@@ -95,17 +124,31 @@
             'trainee': { name: '准Sparker', icon: 'fa-user-graduate', color: 'bg-green-500', max: 4 }
         };
 
+        // --- Speech Recognition Setup ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'zh-CN';
+            recognition.interimResults = false;
+        } else {
+            console.warn("浏览器不支持语音识别。");
+        }
+
         // --- Firestore Path Helpers ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const ROOMS_COLLECTION_PATH = `artifacts/${appId}/public/data/spark-rooms`;
+        // Simplified collection path to work with default security rules
+        const ROOMS_COLLECTION_PATH = 'spark-rooms';
 
         function getRoomRef(roomId) { return doc(db, ROOMS_COLLECTION_PATH, roomId); }
         function getPlayersCollectionRef(roomId) { return collection(db, `${ROOMS_COLLECTION_PATH}/${roomId}/players`); }
         function getPlayerRef(roomId, playerId) { return doc(db, `${ROOMS_COLLECTION_PATH}/${roomId}/players`, playerId); }
+        function getTranscriptsCollectionRef(roomId) { return collection(db, `${ROOMS_COLLECTION_PATH}/${roomId}/transcripts`); }
+        function getKeywordsCollectionRef(roomId) { return collection(db, `${ROOMS_COLLECTION_PATH}/${roomId}/keywords`); }
 
 
         // --- DOM Elements ---
-        const screens = { splash: document.getElementById('splash-screen'), caseSetup: document.getElementById('case-setup-screen'), lobby: document.getElementById('lobby-screen'), game: document.getElementById('game-screen') };
+        const screens = { login: document.getElementById('login-screen'), splash: document.getElementById('splash-screen'), caseSetup: document.getElementById('case-setup-screen'), lobby: document.getElementById('lobby-screen'), game: document.getElementById('game-screen') };
         const createRoomBtn = document.getElementById('create-room-btn');
         const joinRoomInput = document.getElementById('join-room-input');
         const joinRoomBtn = document.getElementById('join-room-btn');
@@ -116,6 +159,7 @@
         const roomIdDisplay = document.getElementById('room-id-display');
         const lobbyMain = screens.lobby.querySelector('main');
         const startGameBtn = document.getElementById('start-game-btn');
+        const fillAiBtn = document.getElementById('fill-ai-btn');
         const roleModal = document.getElementById('role-modal');
         const modalPlayerName = document.getElementById('modal-player-name');
         const roleOptionsContainer = document.getElementById('role-options');
@@ -125,34 +169,64 @@
         const alertMessage = document.getElementById('alert-message');
         const alertOkBtn = document.getElementById('alert-ok-btn');
         const alertDownloadBtn = document.getElementById('alert-download-btn');
-        
+        const endGameBtn = document.getElementById('end-game-btn');
+        const keywordBoard = document.getElementById('keyword-board');
+        const transcriptLog = document.getElementById('transcript-log');
+        const gamePlayerList = document.getElementById('game-player-list');
+        const gameCaseDetails = document.getElementById('game-case-details');
+        // New Auth DOM Elements
+        const authError = document.getElementById('auth-error');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const userInfoDiv = document.getElementById('user-info');
+
+
         // --- Initialize App ---
         async function initializeAppAndAuth() {
             try {
-                const firebaseConfig = JSON.parse(__firebase_config);
+                // Using your provided Firebase project configuration
+                const firebaseConfig = {
+                    apiKey: "AIzaSyBN6nWvcR_e1HutvCSvOf532XA9RmMH4pk",
+                    authDomain: "my-spark-game-id.firebaseapp.com",
+                    projectId: "my-spark-game-id",
+                    storageBucket: "my-spark-game-id.appspot.com",
+                    messagingSenderId: "511569303062",
+                    appId: "1:511569303062:web:2ab6c935a50a22b8ee0737",
+                    measurementId: "G-JKEK2WXBNC"
+                };
+
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
 
-                onAuthStateChanged(auth, async (user) => {
+                // Central authentication state manager
+                onAuthStateChanged(auth, (user) => {
                     if (user) {
+                        // User is signed in
                         userId = user.uid;
+                        switchScreen('splash');
+                        userInfoDiv.innerHTML = `
+                            <p>欢迎, ${user.displayName || user.email}!</p>
+                            <button id="logout-btn" class="text-sm text-red-400 hover:underline">登出</button>
+                        `;
+                        document.getElementById('logout-btn').addEventListener('click', handleLogout);
+                        checkUrlForInvitation();
                     } else {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            try {
-                                await signInWithCustomToken(auth, __initial_auth_token);
-                            } catch (error) {
-                                console.error("Custom token sign-in failed, falling back to anonymous:", error);
-                                await signInAnonymously(auth);
-                            }
-                        } else {
-                            await signInAnonymously(auth);
-                        }
+                        // User is signed out
+                        userId = null;
+                        switchScreen('login');
+                        userInfoDiv.innerHTML = '';
+                        // Clean up any game state if a user logs out mid-game
+                        if (roomUnsubscribe) roomUnsubscribe();
+                        if (playersUnsubscribe) playersUnsubscribe();
+                        if (transcriptUnsubscribe) transcriptUnsubscribe();
+                        if (keywordsUnsubscribe) keywordsUnsubscribe();
+                        currentRoomId = null;
                     }
                 });
             } catch (e) {
                 console.error("Firebase config error:", e);
-                showSystemAlert("初始化失败", "无法加载 Firebase 配置。请检查环境设置。");
+                showSystemAlert("初始化失败", "无法加载 Firebase 配置。请检查你的配置信息是否正确。");
             }
         }
         
@@ -167,7 +241,7 @@
 
         // --- Room Logic ---
         async function createRoom() {
-            if (!userId) { showSystemAlert("错误", "用户认证中，请稍候..."); return; }
+            if (!userId) { showSystemAlert("错误", "请先登录。"); return; }
             createRoomBtn.disabled = true;
             const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
             const roomRef = getRoomRef(roomCode);
@@ -182,20 +256,22 @@
                     createdAt: serverTimestamp(),
                 });
                 await setDoc(playerRef, {
-                    name: `玩家1 (房主)`,
+                    name: `${auth.currentUser.displayName} (房主)`,
                     role: null,
                     isHost: true,
+                    isAi: false,
+                    isSpeaking: false,
                 });
                 joinRoom(roomCode);
             } catch (error) {
                 console.error("Error creating room:", error);
-                showSystemAlert("创建失败", `无法创建房间。错误: ${error.message}`);
+                showSystemAlert("创建失败", `无法创建房间。请检查你的 Firebase 安全规则是否已正确配置。错误: ${error.message}`);
                 createRoomBtn.disabled = false;
             }
         }
 
         async function joinRoom(roomId) {
-            if (!userId) { showSystemAlert("错误", "用户认证中，请稍候..."); return; }
+            if (!userId) { showSystemAlert("错误", "请先登录。"); return; }
             if (!roomId) { showSystemAlert("错误", "请输入房间号。"); return; }
             
             const roomRef = getRoomRef(roomId);
@@ -213,9 +289,11 @@
                     return;
                 }
                 await setDoc(playerRef, {
-                    name: `玩家${playerCount + 1}`,
+                    name: auth.currentUser.displayName || `玩家${playerCount + 1}`,
                     role: null,
                     isHost: false,
+                    isAi: false,
+                    isSpeaking: false,
                 });
             }
 
@@ -226,15 +304,35 @@
                     showSystemAlert("错误", "房间不存在或已被解散。", false);
                     if(roomUnsubscribe) roomUnsubscribe();
                     if(playersUnsubscribe) playersUnsubscribe();
+                    if(transcriptUnsubscribe) transcriptUnsubscribe();
+                    if(keywordsUnsubscribe) keywordsUnsubscribe();
+                    window.history.replaceState({}, document.title, window.location.pathname);
                     switchScreen('splash');
                     return;
                 }
+                const oldGameState = localRoomData.gameState;
                 localRoomData = { id: doc.id, ...doc.data() };
+                
+                if (oldGameState !== 'game' && localRoomData.gameState === 'game') {
+                    setupGameListeners();
+                }
                 renderApp(localRoomData);
             }, (error) => {
                 console.error("Room snapshot error:", error);
                 showSystemAlert("连接错误", "与房间断开连接。");
             });
+        }
+
+        // --- Invitation Logic ---
+        function checkUrlForInvitation() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomIdFromUrl = urlParams.get('room');
+            if (roomIdFromUrl && screens.splash.classList.contains('active')) {
+                const upperCaseRoomId = roomIdFromUrl.trim().toUpperCase();
+                joinRoomInput.value = upperCaseRoomId;
+                showSystemAlert("正在加入房间...", `正在通过邀请链接加入房间 ${upperCaseRoomId}`);
+                joinRoom(upperCaseRoomId);
+            }
         }
 
         // --- Render Logic ---
@@ -251,7 +349,7 @@
                     break;
                 case 'game':
                     switchScreen('game');
-                    // renderGame(roomData);
+                    renderGame(roomData);
                     break;
             }
         }
@@ -264,11 +362,18 @@
 
         function renderLobby() {
             roomIdDisplay.textContent = currentRoomId;
+            fillAiBtn.style.display = localRoomData.hostId === userId ? 'block' : 'none';
+
             if (playersUnsubscribe) playersUnsubscribe();
             playersUnsubscribe = onSnapshot(getPlayersCollectionRef(currentRoomId), (snapshot) => {
                 localPlayers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                lobbyMain.innerHTML = '';
                 
+                if (localRoomData.gameState === 'game') {
+                    renderGamePlayerList();
+                    return;
+                }
+
+                lobbyMain.innerHTML = '';
                 let playerSlots = [...localPlayers];
                 while(playerSlots.length < MAX_PLAYERS) playerSlots.push(null);
 
@@ -295,28 +400,92 @@
                 console.error("Players snapshot error:", error);
             });
         }
+
+        function renderGame(roomData) {
+            gameCaseDetails.innerHTML = roomData.caseDetails.replace(/\n/g, '<br>');
+            renderGamePlayerList();
+        }
+
+        function renderGamePlayerList() {
+            gamePlayerList.innerHTML = '';
+            localPlayers.forEach((player) => {
+                if (!player || !player.role) return;
+                const roleInfo = ROLES[player.role];
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'player-item flex items-center p-2 bg-gray-900/50 rounded-lg transition-all';
+                playerDiv.dataset.playerId = player.id;
+
+                if (player.isSpeaking) {
+                    playerDiv.classList.add('speaking');
+                } else {
+                    playerDiv.classList.remove('speaking');
+                }
+
+                let speakButtonHTML = '';
+                if (player.id === userId && !player.isAi) {
+                    const icon = player.isSpeaking ? 'fa-stop' : 'fa-microphone';
+                    const color = player.isSpeaking ? 'text-red-500' : 'text-white';
+                    speakButtonHTML = `<button class="speak-btn p-2 rounded-full hover:bg-blue-500/50" data-player-id="${player.id}"><i class="fas ${icon} ${color}"></i></button>`;
+                } else if (player.isAi) {
+                    speakButtonHTML = '<i class="fas fa-robot text-yellow-300 p-2"></i>';
+                }
+
+                playerDiv.innerHTML = `
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-xl mr-3 ${roleInfo.color}"><i class="fas ${roleInfo.icon}"></i></div>
+                    <div class="flex-1"><p class="font-bold">${player.name}</p><p class="text-sm text-gray-400">${roleInfo.name}</p></div>
+                    ${speakButtonHTML}
+                `;
+                gamePlayerList.appendChild(playerDiv);
+            });
+        }
         
+        // --- AI Player Logic ---
+        async function fillWithAI() {
+            if (localRoomData.hostId !== userId) {
+                showSystemAlert("权限不足", "只有房主才能添加AI玩家。");
+                return;
+            }
+            const currentPlayersCount = localPlayers.length;
+            const slotsToFill = MAX_PLAYERS - currentPlayersCount;
+            if (slotsToFill <= 0) {
+                showSystemAlert("提示", "所有位置都已满。");
+                return;
+            }
+            fillAiBtn.disabled = true;
+            fillAiBtn.innerHTML = '<span class="loader"></span> 正在添加AI...';
+            try {
+                const playersCollectionRef = getPlayersCollectionRef(currentRoomId);
+                const existingAiCount = localPlayers.filter(p => p.isAi).length;
+                for (let i = 0; i < slotsToFill; i++) {
+                    await addDoc(playersCollectionRef, {
+                        name: `AI玩家 ${existingAiCount + i + 1}`,
+                        role: null, isHost: false, isAi: true, isSpeaking: false
+                    });
+                }
+            } catch (error) {
+                console.error("Error filling with AI:", error);
+                showSystemAlert("错误", "添加AI玩家失败。");
+            } finally {
+                 fillAiBtn.disabled = false;
+                 fillAiBtn.innerHTML = '<i class="fas fa-robot mr-2"></i>AI 填充空位';
+            }
+        }
+
         // --- Role Assignment Logic ---
         function openRoleModal(playerId, playerName) {
             selectedPlayerIdForRole = playerId;
             modalPlayerName.textContent = playerName;
-            roleOptionsContainer.innerHTML = ''; // Clear previous options
-
-            const assignedRolesCount = localPlayers.reduce((acc, player) => {
-                if (player.role) {
-                    acc[player.role] = (acc[player.role] || 0) + 1;
-                }
+            roleOptionsContainer.innerHTML = ''; 
+            const assignedRolesCount = localPlayers.reduce((acc, p) => {
+                if (p.role) acc[p.role] = (acc[p.role] || 0) + 1;
                 return acc;
             }, {});
-
             Object.keys(ROLES).forEach(roleKey => {
                 const role = ROLES[roleKey];
                 const currentCount = assignedRolesCount[roleKey] || 0;
-                
                 const button = document.createElement('button');
                 button.className = `w-full p-3 rounded-lg text-white font-bold ${role.color}`;
                 button.textContent = `${role.name} (${currentCount}/${role.max})`;
-                
                 if (currentCount >= role.max) {
                     button.disabled = true;
                     button.classList.add('opacity-50', 'cursor-not-allowed');
@@ -325,7 +494,6 @@
                 }
                 roleOptionsContainer.appendChild(button);
             });
-
             roleModal.classList.remove('hidden');
             roleModal.classList.add('flex');
         }
@@ -348,15 +516,99 @@
             selectedPlayerIdForRole = null;
         }
 
+        // --- Game Listeners Setup ---
+        function setupGameListeners() {
+            if (playersUnsubscribe) playersUnsubscribe();
+            playersUnsubscribe = onSnapshot(getPlayersCollectionRef(currentRoomId), (snapshot) => {
+                localPlayers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderGamePlayerList();
+            });
+
+            if (transcriptUnsubscribe) transcriptUnsubscribe();
+            const transcriptsQuery = query(getTranscriptsCollectionRef(currentRoomId), orderBy("createdAt"));
+            transcriptUnsubscribe = onSnapshot(transcriptsQuery, (snapshot) => {
+                transcriptLog.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const entry = document.createElement('div');
+                    entry.className = 'text-sm';
+                    entry.innerHTML = `<strong class="text-teal-300">${data.playerName}:</strong> ${data.text}`;
+                    transcriptLog.appendChild(entry);
+                });
+                transcriptLog.scrollTop = transcriptLog.scrollHeight;
+            });
+
+            if (keywordsUnsubscribe) keywordsUnsubscribe();
+            keywordsUnsubscribe = onSnapshot(getKeywordsCollectionRef(currentRoomId), (snapshot) => {
+                keywordBoard.innerHTML = '';
+                 snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const card = document.createElement('div');
+                    const colors = ['bg-yellow-400', 'bg-blue-400', 'bg-green-400', 'bg-purple-400', 'bg-pink-400'];
+                    card.className = `keyword-card ${colors[Math.floor(Math.random() * colors.length)]} text-gray-900 font-semibold py-2 px-4 rounded-lg shadow-lg`;
+                    card.textContent = data.text;
+                    keywordBoard.appendChild(card);
+                });
+                 keywordBoard.scrollTop = keywordBoard.scrollHeight;
+            });
+        }
+
+        // --- Speech Recognition Logic ---
+        async function toggleSpeaking() {
+            const me = localPlayers.find(p => p.id === userId);
+            if (!me || !recognition) return;
+
+            if (me.isSpeaking) {
+                recognition.stop();
+                await updateDoc(getPlayerRef(currentRoomId, userId), { isSpeaking: false });
+            } else {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    stream.getTracks().forEach(track => track.stop()); 
+                    
+                    recognition.start();
+                    await updateDoc(getPlayerRef(currentRoomId, userId), { isSpeaking: true });
+
+                    recognition.onend = async () => {
+                         await updateDoc(getPlayerRef(currentRoomId, userId), { isSpeaking: false });
+                    };
+
+                    recognition.onresult = async (event) => {
+                        const transcriptText = event.results[0][0].transcript;
+                        
+                        await addDoc(getTranscriptsCollectionRef(currentRoomId), {
+                            playerId: userId,
+                            playerName: me.name,
+                            text: transcriptText,
+                            createdAt: serverTimestamp()
+                        });
+
+                        const prompt = `你是一个关键词提炼AI。从以下这段发言中，提炼出1-3个核心关键词。每个关键词2-4个字。用逗号分隔。不要任何解释。\n发言内容: "${transcriptText}"`;
+                        const keywordsResult = await callGemini(null, prompt); 
+                        if (keywordsResult) {
+                            const keywords = keywordsResult.split(/,|，/).map(k => k.trim()).filter(Boolean);
+                            for (const keyword of keywords) {
+                                await addDoc(getKeywordsCollectionRef(currentRoomId), { text: keyword });
+                            }
+                        }
+                    };
+
+                } catch (err) {
+                    console.error("Error with microphone or speech recognition:", err);
+                    showSystemAlert("语音错误", "无法启动语音识别。请检查麦克风权限。");
+                    await updateDoc(getPlayerRef(currentRoomId, userId), { isSpeaking: false });
+                }
+            }
+        }
+
         // --- Gemini API Call ---
         async function callGemini(button, prompt) {
-            button.disabled = true;
-            const originalText = button.innerHTML;
-            button.innerHTML = '<span class="loader"></span> AI思考中...';
+            if(button) button.disabled = true;
+            const originalText = button ? button.innerHTML : '';
+            if(button) button.innerHTML = '<span class="loader"></span> AI思考中...';
 
             try {
-                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-                const payload = { contents: chatHistory };
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
                 const apiKey = ""; // Leave empty
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
                 
@@ -366,28 +618,95 @@
                     body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) {
-                    throw new Error(`API call failed with status: ${response.status}`);
-                }
-
+                if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
                 const result = await response.json();
-                if (result.candidates && result.candidates.length > 0) {
-                    return result.candidates[0].content.parts[0].text;
-                } else {
-                    throw new Error("Invalid response structure from API.");
-                }
+                if (result.candidates && result.candidates.length > 0) return result.candidates[0].content.parts[0].text;
+                else throw new Error("Invalid response structure from API.");
             } catch (error) {
                 console.error("Gemini API call failed:", error);
                 showSystemAlert("AI 调用失败", `无法连接到AI服务。请稍后再试。`);
                 return null;
             } finally {
-                button.disabled = false;
-                button.innerHTML = originalText;
+                if(button) {
+                    button.disabled = false;
+                    button.innerHTML = originalText;
+                }
             }
         }
 
+        // --- New Auth Handlers ---
+        async function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const password = document.getElementById('register-password').value.trim();
+            if (!name || !email || !password) {
+                authError.textContent = '所有字段均为必填项。';
+                return;
+            }
+            authError.textContent = '';
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await updateProfile(userCredential.user, { displayName: name });
+                // onAuthStateChanged will handle the rest
+            } catch (error) {
+                console.error("Registration failed:", error.code, error.message);
+                if (error.code === 'auth/operation-not-allowed') {
+                    authError.textContent = '注册失败：请在 Firebase 控制台开启“邮箱/密码”登录。';
+                } else if (error.code === 'auth/email-already-in-use') {
+                    authError.textContent = '此邮箱已被注册。';
+                } else if (error.code === 'auth/weak-password') {
+                    authError.textContent = '密码太弱，请使用至少6位字符。';
+                } else {
+                    authError.textContent = '注册失败，发生未知错误。';
+                }
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+            if (!email || !password) {
+                authError.textContent = '请输入邮箱和密码。';
+                return;
+            }
+            authError.textContent = '';
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                // onAuthStateChanged will handle the rest
+            } catch (error) {
+                console.error("Login failed:", error.code, error.message);
+                if (error.code === 'auth/operation-not-allowed') {
+                    authError.textContent = '登录失败：请在 Firebase 控制台开启“邮箱/密码”登录。';
+                } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    authError.textContent = "登录失败，请检查邮箱或密码。";
+                } else {
+                    authError.textContent = "登录失败，发生未知错误。";
+                }
+            }
+        }
+
+        async function handleLogout() {
+            await signOut(auth);
+        }
 
         // --- Event Listeners ---
+        // Auth Listeners
+        document.getElementById('login-btn').addEventListener('click', handleLogin);
+        document.getElementById('register-btn').addEventListener('click', handleRegister);
+        document.getElementById('show-register-btn').addEventListener('click', () => {
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
+            authError.textContent = '';
+        });
+        document.getElementById('show-login-btn').addEventListener('click', () => {
+            registerForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+            authError.textContent = '';
+        });
+
+        // Game Listeners
         createRoomBtn.addEventListener('click', createRoom);
         joinRoomBtn.addEventListener('click', () => {
             const roomId = joinRoomInput.value.trim().toUpperCase();
@@ -413,8 +732,64 @@
             }
         });
 
+        fillAiBtn.addEventListener('click', fillWithAI);
         cancelRoleBtn.addEventListener('click', closeRoleModal);
         alertOkBtn.addEventListener('click', () => alertModal.classList.add('hidden'));
+        
+        endGameBtn.addEventListener('click', async () => {
+            const keywordDocs = await getDocs(getKeywordsCollectionRef(currentRoomId));
+            const allKeywords = keywordDocs.docs.map(doc => doc.data().text).join(', ');
+
+            if (!allKeywords) { showSystemAlert('无法生成报告', '关键词看板是空的，请先进行讨论。'); return; }
+            const prompt = `你是一位顶级的引导师和分析师。请基于以下案主信息和本次探索流涌现的所有关键词，生成一份专业的洞察报告。报告应包含：1.核心议题提炼 2.模式与洞察 3.启发性问题。请使用清晰的标题和列表（如-）来组织你的报告。\n案主信息:\n${localRoomData.caseDetails}\n\n关键词列表:\n${allKeywords}`;
+            const result = await callGemini(endGameBtn, prompt);
+            if (result) showSystemAlert('✨ 本次探索洞察报告', result, true);
+        });
+
+        alertDownloadBtn.addEventListener('click', () => {
+            const { jsPDF } = window.jspdf;
+            const reportContent = document.getElementById('alert-message');
+            const reportTitle = document.getElementById('alert-title').textContent;
+            html2canvas(reportContent, { backgroundColor: '#1a202c', scale: 2, scrollY: -window.scrollY, height: reportContent.scrollHeight, windowHeight: reportContent.scrollHeight }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
+                const ratio = Math.min((pdfWidth - 20) / imgWidth, (pdfHeight - 20) / imgHeight);
+                const imgX = 10;
+                const imgY = 10;
+                pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+                pdf.save(`${reportTitle}.pdf`);
+            });
+        });
+
+        gamePlayerList.addEventListener('click', (e) => {
+            const speakBtn = e.target.closest('.speak-btn');
+            if (speakBtn) {
+                toggleSpeaking();
+            }
+        });
+
+        roomIdDisplay.addEventListener('click', () => {
+            if (!currentRoomId) return;
+            const baseUrl = window.location.href.split('?')[0];
+            const inviteLink = `${baseUrl}?room=${currentRoomId}`;
+            
+            const textArea = document.createElement("textarea");
+            textArea.value = inviteLink;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showSystemAlert("邀请链接已复制!", `链接: ${inviteLink}<br><br>请发送给你的朋友邀请他们加入！`);
+            } catch (err) {
+                console.error('无法复制链接: ', err);
+                showSystemAlert("复制失败", "您的浏览器可能不支持此功能。");
+            }
+            document.body.removeChild(textArea);
+        });
 
         // Initialize
         initializeAppAndAuth();
